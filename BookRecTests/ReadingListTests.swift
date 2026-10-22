@@ -1,6 +1,7 @@
 import XCTest
 @testable import BookRec
 
+@MainActor
 final class ReadingListModelTests: XCTestCase {
     func testLoadLoadsStoredBooks() async {
         let store = InMemoryReadingListStore(books: [.fixture(id: "A")])
@@ -47,6 +48,7 @@ final class ReadingListModelTests: XCTestCase {
     }
 }
 
+@MainActor
 final class ReadingListViewModelTests: XCTestCase {
     func testBooksReflectLoadedReadingList() async {
         let readingList = ReadingList(store: InMemoryReadingListStore(books: [.fixture(id: "A")]))

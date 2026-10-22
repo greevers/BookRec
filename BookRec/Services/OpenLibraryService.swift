@@ -8,11 +8,11 @@
 import Foundation
 
 // Protocol for DI & testing
-protocol HTTPClient {
+nonisolated protocol HTTPClient: Sendable {
     func send(_ request: URLRequest) async throws -> (Data, URLResponse)
 }
 
-extension URLSession: HTTPClient {
+nonisolated extension URLSession: HTTPClient {
     func send(_ request: URLRequest) async throws -> (Data, URLResponse) {
         try await data(for: request)
     }
@@ -20,7 +20,7 @@ extension URLSession: HTTPClient {
 
 /// `BookSearchService` backed by the Open Library search API.
 /// https://openlibrary.org/dev/docs/api/search
-struct OpenLibraryService: BookSearchService {
+nonisolated struct OpenLibraryService: BookSearchService {
     static let shared = OpenLibraryService()
     private static let endpoint = URL(string: "https://openlibrary.org/search.json")!
     private static let responseFields = "key,title,author_name,first_publish_year,isbn,cover_i,subject"

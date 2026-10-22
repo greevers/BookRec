@@ -1,12 +1,13 @@
 import XCTest
 @testable import BookRec
 
+@MainActor
 final class SearchViewModelTests: XCTestCase {
     private var searcher: StubSearcher!
     private var sut: SearchViewModel!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         searcher = StubSearcher()
         sut = SearchViewModel(searchService: searcher)
     }

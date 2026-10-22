@@ -87,7 +87,7 @@ nonisolated extension Book {
     }
 }
 
-extension Array where Element == Book {
+nonisolated extension Array where Element == Book {
     // Search by author and search by subject can return the same book, so we compare and remove those duplicates
     /// Removes repeated books (by id, then by loose title/author identity), keeping first occurrences.
     func removingDuplicates() -> [Book] {

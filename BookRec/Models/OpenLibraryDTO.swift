@@ -8,13 +8,13 @@
 import Foundation
 
 // Property names are the camelCase forms of the API's snake_case keys (decoded with `.convertFromSnakeCase`)
-struct SearchResponse: Decodable {
+nonisolated struct SearchResponse: Decodable {
     let start: Int?
     let numFound: Int?
     let docs: [BookDTO]
 }
 
-struct BookDTO: Decodable {
+nonisolated struct BookDTO: Decodable {
     let key: String?
     let title: String?
     let authorName: [String]?
@@ -24,7 +24,7 @@ struct BookDTO: Decodable {
     let subject: [String]?
 }
 
-extension Book {
+nonisolated extension Book {
     /// Maps a search doc to a `Book`. Needed because some records can't be
     /// displayed meaningfully (no key or no title). Return nil for those.
     init?(dto: BookDTO) {

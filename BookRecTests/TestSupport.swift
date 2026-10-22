@@ -29,6 +29,7 @@ struct StubError: LocalizedError, Equatable {
 
 /// Scriptable `BookSearchService` that records the queries it receives.
 /// Author and subject results hold every matching book; calls return the `offset..<offset+pageSize` slice of it.
+@MainActor
 final class StubSearcher: BookSearchService {
     private(set) var titleQueries: [String] = []
     private(set) var authorQueries: [String] = []
@@ -41,18 +42,18 @@ final class StubSearcher: BookSearchService {
     var authorResult: Result<[Book], Error> = .success([])
     var subjectResult: Result<[Book], Error> = .success([])
 
-    func books(matchingTitle title: String) async throws -> [Book] {
+    @MainActor func books(matchingTitle title: String) async throws -> [Book] {
         titleQueries.append(title)
         return try titleResult.get()
     }
 
-    func books(byAuthor author: String, offset: Int) async throws -> BookPage {
+    @MainActor func books(byAuthor author: String, offset: Int) async throws -> BookPage {
         authorQueries.append(author)
         authorOffsets.append(offset)
         return try page(of: authorResult, offset: offset)
     }
 
-    func books(inSubject subject: String, offset: Int) async throws -> BookPage {
+    @MainActor func books(inSubject subject: String, offset: Int) async throws -> BookPage {
         subjectQueries.append(subject)
         subjectOffsets.append(offset)
         return try page(of: subjectResult, offset: offset)
@@ -66,6 +67,7 @@ final class StubSearcher: BookSearchService {
     }
 }
 
+@MainActor
 final class MockHTTPClient: HTTPClient {
     private let handler: (URLRequest) throws -> (Data, URLResponse)
     private(set) var requests: [URLRequest] = []
@@ -74,7 +76,7 @@ final class MockHTTPClient: HTTPClient {
         self.handler = handler
     }
 
-    func send(_ request: URLRequest) async throws -> (Data, URLResponse) {
+    @MainActor func send(_ request: URLRequest) async throws -> (Data, URLResponse) {
         requests.append(request)
         return try handler(request)
     }

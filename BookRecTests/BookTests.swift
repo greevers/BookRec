@@ -1,6 +1,7 @@
 import XCTest
 @testable import BookRec
 
+@MainActor
 final class BookTests: XCTestCase {
     func testCoverURLUsesCoverIDAndSize() {
         let book = Book.fixture(coverID: 8474036)

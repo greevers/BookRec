@@ -1,13 +1,14 @@
 import XCTest
 @testable import BookRec
 
+@MainActor
 final class RecommendationsViewModelTests: XCTestCase {
     private var searcher: StubSearcher!
     private let book = Book.fixture(id: "SEED", authors: ["Seed Author"], subjects: ["Fantasy"])
     private var sut: RecommendationsViewModel!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         searcher = StubSearcher()
         sut = RecommendationsViewModel(book: book, searchService: searcher)
     }

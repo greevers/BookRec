@@ -1,6 +1,7 @@
 import XCTest
 @testable import BookRec
 
+@MainActor
 final class OpenLibraryServiceTests: XCTestCase {
     private func makeService(status: Int = 200, body: String) -> (OpenLibraryService, MockHTTPClient) {
         let client = MockHTTPClient { request in
