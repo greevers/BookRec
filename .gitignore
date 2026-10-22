@@ -1,0 +1,11 @@
+.DS_Store
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+
+# Local tooling
+CLAUDE.md
+.claude/
+project.yml
