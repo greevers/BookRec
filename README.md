@@ -68,4 +68,5 @@ BookRecTests/          Unit tests with stubbed network / temporary-file storage
 ## Assumptions and possible next steps
 
 - The title search returns the 10 most relevant matches (refine the title to find others). Recommendations are paginated (20 per page, per source): the next page loads when a row within 5 of the end appears.
-- Possible additions: offline cache for covers, "mark as read", sorting the reading list.
+- Update persistence from plain file storage to CoreData or SwiftData
+- Possible additions: offline cache for covers, "mark as read", sorting the reading list, favorite, remove from list.
