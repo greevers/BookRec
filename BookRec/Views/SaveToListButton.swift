@@ -7,19 +7,20 @@
 
 import SwiftUI
 
+/// Presentational save control. The owning screen decides saved state and what saving does
 struct SaveToListButton: View {
-    @Environment(ReadingList.self) private var readingList
-    let book: Book
+    let isSaved: Bool
+    let onSave: () async -> Void
     
     var body: some View {
-        if readingList.contains(book) {
+        if isSaved {
             Label("Saved", systemImage: "checkmark.circle.fill")
                 .font(.subheadline)
                 .foregroundStyle(.green)
         } else {
             Button {
                 Task {
-                    await readingList.add(book)
+                    await onSave()
                 }
             } label: {
                 Label("Save to Book List", systemImage: "bookmark")
@@ -31,13 +32,9 @@ struct SaveToListButton: View {
 }
 
 #Preview("Not saved") {
-    SaveToListButton(book: .previewDune)
-        .environment(ReadingList.preview())
+    SaveToListButton(isSaved: false) {}
 }
 
 #Preview("Saved") {
-    let readingList = ReadingList.preview([.previewDune])
-    SaveToListButton(book: .previewDune)
-        .environment(readingList)
-        .task { await readingList.load() }
+    SaveToListButton(isSaved: true) {}
 }

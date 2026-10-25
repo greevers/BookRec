@@ -4,13 +4,15 @@ import XCTest
 @MainActor
 final class RecommendationsViewModelTests: XCTestCase {
     private var searcher: StubSearcher!
+    private var readingList: ReadingList!
     private let book = Book.fixture(id: "SEED", authors: ["Seed Author"], subjects: ["Fantasy"])
     private var sut: RecommendationsViewModel!
 
     override func setUp() async throws {
         try await super.setUp()
         searcher = StubSearcher()
-        sut = RecommendationsViewModel(book: book, searchService: searcher)
+        readingList = ReadingList(store: InMemoryReadingListStore())
+        sut = RecommendationsViewModel(book: book, searchService: searcher, readingList: readingList)
     }
 
     private func books(_ ids: String...) -> [Book] {
@@ -82,7 +84,7 @@ final class RecommendationsViewModelTests: XCTestCase {
             id: "N", title: "Noisy", authors: ["Author"],
             subjects: ["Accessible book", "nyt:hardcover-fiction=2012-01-01", "Fiction", "Science fiction"]
         )
-        sut = RecommendationsViewModel(book: noisy, searchService: searcher)
+        sut = RecommendationsViewModel(book: noisy, searchService: searcher, readingList: readingList)
 
         await sut.load()
 
@@ -91,7 +93,7 @@ final class RecommendationsViewModelTests: XCTestCase {
 
     func testSeedWithoutAuthorOrSubjectLoadsNothingWithoutQuerying() async {
         let bare = Book.fixture(id: "BARE", authors: [], subjects: [])
-        sut = RecommendationsViewModel(book: bare, searchService: searcher)
+        sut = RecommendationsViewModel(book: bare, searchService: searcher, readingList: readingList)
 
         await sut.load()
 
@@ -159,6 +161,21 @@ final class RecommendationsViewModelTests: XCTestCase {
         XCTAssertEqual(loaded, books("A1", "A2", "S1", "S2", "A3", "S3"))
         XCTAssertEqual(searcher.authorOffsets, [0, 2, 2])
         XCTAssertEqual(searcher.subjectOffsets, [0, 2, 2])
+    }
+
+    // MARK: Reading list
+
+    func testUnsavedBookIsNotSaved() {
+        XCTAssertFalse(sut.isSaved(books("REC")[0]))
+    }
+
+    func testSaveAddsBookToReadingList() async {
+        let rec = books("REC")[0]
+
+        await sut.save(rec)
+
+        XCTAssertTrue(sut.isSaved(rec))
+        XCTAssertEqual(readingList.books, [rec])
     }
 
     /// Lets the task started by an intent (e.g. `loadMoreIfNeeded(for:)`) run, up to a short timeout.

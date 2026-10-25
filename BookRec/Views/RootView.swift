@@ -22,7 +22,6 @@ struct RootView: View {
                     Label("Reading List", systemImage: "books.vertical")
                 }
         }
-        .environment(readingList)
         .task {
             await readingList.load()
         }

@@ -11,9 +11,9 @@ import SwiftUI
 struct RecommendationsView: View {
     @State private var viewModel: RecommendationsViewModel
     
-    // BookSearchService added to init for preview purposes
-    init(book: Book, searchService: BookSearchService = OpenLibraryService.shared) {
-        viewModel = RecommendationsViewModel(book: book, searchService: searchService)
+    // BookSearchService and ReadingList added to init for preview purposes
+    init(book: Book, searchService: BookSearchService = OpenLibraryService.shared, readingList: ReadingList = .shared) {
+        viewModel = RecommendationsViewModel(book: book, searchService: searchService, readingList: readingList)
     }
     
     var body: some View {
@@ -43,7 +43,9 @@ struct RecommendationsView: View {
                     ForEach(books) { book in
                         VStack(alignment: .leading) {
                             BookRowView(book: book)
-                            SaveToListButton(book: book)
+                            SaveToListButton(isSaved: viewModel.isSaved(book)) {
+                                await viewModel.save(book)
+                            }
                         }
                         .onAppear {
                             viewModel.loadMoreIfNeeded(for: book)
@@ -68,22 +70,20 @@ struct RecommendationsView: View {
     NavigationStack {
         RecommendationsView(
             book: .previewDune,
-            searchService: PreviewSearchService(recommendations: [.previewHailMary, .previewHobbit, .previewNoCover])
+            searchService: PreviewSearchService(recommendations: [.previewHailMary, .previewHobbit, .previewNoCover]),
+            readingList: .preview()
         )
     }
-    .environment(ReadingList.preview())
 }
 
 #Preview("No recommendations") {
     NavigationStack {
-        RecommendationsView(book: .previewDune, searchService: PreviewSearchService())
+        RecommendationsView(book: .previewDune, searchService: PreviewSearchService(), readingList: .preview())
     }
-    .environment(ReadingList.preview())
 }
 
 #Preview("Failed") {
     NavigationStack {
-        RecommendationsView(book: .previewDune, searchService: PreviewSearchService(fails: true))
+        RecommendationsView(book: .previewDune, searchService: PreviewSearchService(fails: true), readingList: .preview())
     }
-    .environment(ReadingList.preview())
 }

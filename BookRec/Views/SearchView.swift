@@ -84,7 +84,6 @@ struct SearchView: View {
 
 #Preview("Idle") {
     SearchView(viewModel: SearchViewModel(searchService: PreviewSearchService()))
-        .environment(ReadingList.preview())
 }
 
 #Preview("Multiple matches") {
@@ -92,20 +91,17 @@ struct SearchView: View {
         searchService: PreviewSearchService(titleResults: Book.previewSamples, recommendations: Book.previewSamples)
     )
     SearchView(viewModel: viewModel)
-        .environment(ReadingList.preview())
         .task { await viewModel.search(title: "Dune") }
 }
 
 #Preview("No matches") {
     let viewModel = SearchViewModel(searchService: PreviewSearchService())
     SearchView(viewModel: viewModel)
-        .environment(ReadingList.preview())
         .task { await viewModel.search(title: "Asdfghjkl") }
 }
 
 #Preview("Failed") {
     let viewModel = SearchViewModel(searchService: PreviewSearchService(fails: true))
     SearchView(viewModel: viewModel)
-        .environment(ReadingList.preview())
         .task { await viewModel.search(title: "Dune") }
 }

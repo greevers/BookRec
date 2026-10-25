@@ -19,6 +19,7 @@ final class RecommendationsViewModel {
     private(set) var state: State = .loading
     
     private let searchService: BookSearchService
+    private let readingList: ReadingList
     @ObservationIgnored private var authorPageOffset = 0
     @ObservationIgnored private var subjectPageOffset = 0
     @ObservationIgnored private var author: String?
@@ -28,9 +29,10 @@ final class RecommendationsViewModel {
     /// Whether another page may add books
     private var hasMore: Bool { author != nil || subject != nil }
     
-    init(book: Book, searchService: BookSearchService = OpenLibraryService.shared) {
+    init(book: Book, searchService: BookSearchService = OpenLibraryService.shared, readingList: ReadingList = .shared) {
         self.book = book
         self.searchService = searchService
+        self.readingList = readingList
         self.author = book.primaryAuthor
         self.subject = book.primarySubject
     }
@@ -81,6 +83,17 @@ final class RecommendationsViewModel {
         }
         
         state = .loaded(updated)
+    }
+    
+    // Reading list
+    /// Drives SaveToListButton state. Reads the observable list, so rows update after a save
+    func isSaved(_ book: Book) -> Bool {
+        readingList.contains(book)
+    }
+    
+    /// Called from SaveToListButton's action
+    func save(_ book: Book) async {
+        await readingList.add(book)
     }
     
     // Pagination

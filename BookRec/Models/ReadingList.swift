@@ -7,8 +7,8 @@
 
 import Foundation
 
-/// App-wide source of truth for saved books, shared through the environment by
-/// every screen that reads or saves to the list (Reading List tab, SaveToListButton)
+/// App-wide source of truth for saved books, injected into the view models that read
+/// or save to the list (ReadingListViewModel, RecommendationsViewModel)
 @Observable
 final class ReadingList {
     static let shared = ReadingList(store: ReadingListStores.shared)
@@ -44,7 +44,7 @@ final class ReadingList {
         books.contains { $0.id == book.id }
     }
     
-    /// Add a book to persistent store, called from SaveToListButton
+    /// Add a book to persistent store, called from RecommendationsViewModel
     func add(_ book: Book) async {
         guard !contains(book) else { return }
         
