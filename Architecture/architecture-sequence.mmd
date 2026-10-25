@@ -1,0 +1,69 @@
+%% BookRec search -> recommendation -> save sequence
+%% Derived from SearchViewModel, RecommendationsViewModel, OpenLibraryService, ReadingList
+sequenceDiagram
+    autonumber
+    actor User
+    participant SV as SearchView
+    participant SVM as SearchViewModel
+    participant OLS as OpenLibraryService<br/>(BookSearchService)
+    participant API as Open Library<br/>search.json
+    participant RV as RecommendationsView
+    participant RVM as RecommendationsViewModel
+    participant RL as ReadingList.shared
+    participant FS as FileReadingListStore<br/>(ReadingList.json)
+
+    User->>SV: enter title, submit
+    SV->>SVM: submit() (cancels prior Task)
+    SVM->>OLS: books(matchingTitle: title)
+    OLS->>API: GET ?title=...&limit=10
+    API-->>OLS: JSON docs
+    OLS-->>SVM: [Book] (mapped via BookDTO, removingDuplicates)
+
+    alt 0 candidates
+        SVM-->>SV: state .matches(query, [])
+        SV-->>User: "No books found. Please try entering another title."
+    else 1 candidate
+        SVM-->>SV: state .matches + selectedBook = candidates[0]
+        SV->>RV: navigationDestination(item: selectedBook)
+    else many candidates
+        SVM-->>SV: state .matches(query, candidates)
+        SV-->>User: "Which book did you mean?" list
+        User->>SV: tap a candidate
+        SV->>SVM: select(book)
+        SV->>RV: navigationDestination(item: selectedBook)
+    else network / decode error
+        SVM-->>SV: state .failed ("Something went wrong")
+    end
+
+    RV->>RVM: .task load()
+    Note over RVM: author = book.primaryAuthor<br/>subject = book.primarySubject (noise-filtered)
+    par author search
+        RVM->>OLS: books(byAuthor: author, offset: authorPageOffset)
+        OLS->>API: GET ?author=...&limit=20
+        API-->>OLS: JSON docs
+        OLS-->>RVM: BookPage (books, hasMore, nextOffset)
+    and subject search
+        RVM->>OLS: books(inSubject: subject, offset: subjectPageOffset)
+        OLS->>API: GET ?subject=...&limit=20
+        API-->>OLS: JSON docs
+        OLS-->>RVM: BookPage (books, hasMore, nextOffset)
+    end
+    Note over RVM: merge = existing + author books + subject books<br/>filter out source book (isSameWork)<br/>removingDuplicates()
+    RVM-->>RV: state .loaded([Book]) or .failed if either request throws
+    RV-->>User: BookRowView list (title, author, year, ISBN, cover)
+
+    opt scroll near end (last 5 rows)
+        RV->>RVM: loadMoreIfNeeded(for:) -> loadNextPage()
+        Note over RVM: same parallel author + subject fetch,<br/>exhausted searches are skipped
+    end
+
+    User->>RV: tap "Save to Book List"
+    RV->>RVM: SaveToListButton onSave -> save(book)
+    RVM->>RL: add(book)
+    RL->>FS: insert(book)
+    FS->>FS: load, append/upsert, atomic write JSON
+    FS-->>RL: ok (or error -> alert on RootView)
+    RL-->>RV: books updated -> isSaved(book) true, button shows "Saved"
+
+    User->>RL: open Reading List tab
+    Note over RL: ReadingListView -> ReadingListViewModel.books<br/>(loaded once at launch by RootView .task)

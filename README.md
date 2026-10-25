@@ -38,6 +38,13 @@ BookRec/
 BookRecTests/          Unit tests with stubbed network / temporary-file storage
 ```
 
+## Architecture diagrams
+
+- [`Architecture/architecture.pdf`](Architecture/architecture.pdf) – layered view: Presentation → View Models / State → Domain / Services → Data / Persistence → External (Open Library). It shows the search 0 / 1 / many branch, the author + subject recommendation merge, and how saving flows from `SaveToListButton` through `RecommendationsViewModel` to `ReadingList` and the JSON file.
+- [`Architecture/architecture-sequence.pdf`](Architecture/architecture-sequence.pdf) – sequence diagram of the full journey: search, disambiguate, load recommendations (parallel author and subject requests, pagination), save a book, view the Reading List.
+
+Both are generated from Mermaid sources in the same folder ([`architecture.mmd`](Architecture/architecture.mmd), [`architecture-sequence.mmd`](Architecture/architecture-sequence.mmd)). To regenerate a PDF after editing its source, run `npx -p @mermaid-js/mermaid-cli mmdc -i Architecture/architecture.mmd -o Architecture/architecture.pdf --pdfFit`.
+
 ## Design decisions
 
 - **One state value per screen, navigation for the drill-down.** `SearchViewModel.State` (`idle`, `loading`, `notFound`, `matches`, `failed`) drives the Discover root, and `RecommendationsViewModel.State` (`loading`, `loaded`, `failed`) drives each pushed recommendations screen. Impossible combinations (results and an error at once, a stale spinner) can't be represented, and each view is a plain switch over its state. Choosing a candidate pushes onto a `NavigationStack` via `navigationDestination(item:)` bound to `SearchViewModel.selectedBook`, so the user can go back and pick a different candidate without searching again. Each pushed screen owns its request, so a failed recommendation load never disturbs the candidate list.

@@ -1,0 +1,125 @@
+%% BookRec system architecture (layered view)
+%% Derived from the source under BookRec/. Full call ordering: architecture-sequence.mmd
+%% Solid arrows: calls / commands (downward). Dotted arrows: returned data (upward).
+%% Returns are written "Caller <-.-> Callee" with the callee-side head hidden via linkStyle,
+%% so the layout still ranks them top-down and no cycles are introduced.
+flowchart TB
+    subgraph Presentation["Presentation (SwiftUI) - Views/"]
+        Root["BookRecApp -> RootView (TabView)<br/><i>App/BookRecApp.swift, Views/RootView.swift</i><br/>loads ReadingList at launch, shows its errors"]
+        Row["BookRowView (row in every list)<br/><i>Views/BookRowView.swift</i><br/>title, author, year, ISBN, cover art"]
+        SearchV["SearchView - Discover tab<br/><i>Views/SearchView.swift</i><br/>.searchable, candidate List"]
+        RecV["RecommendationsView<br/><i>Views/RecommendationsView.swift</i>"]
+        SaveBtn["SaveToListButton<br/><i>Views/SaveToListButton.swift</i>"]
+        RLView["ReadingListView<br/><i>Views/ReadingListView.swift</i>"]
+    end
+
+    subgraph VM["View Models / State (@Observable) - ViewModels/, Models/ReadingList.swift"]
+        subgraph LaneSearch["Search + 0 / 1 / many"]
+        SearchVM["SearchViewModel<br/>idle | loading | matches | failed<br/><i>ViewModels/SearchViewModel.swift</i>"]
+        Branch{"candidates.count"}
+        Zero["0: 'No books found.<br/>Please try entering another title.'"]
+        One["1: selectedBook auto-set<br/>-> push RecommendationsView"]
+        Many["many: 'Which book did you mean?'<br/>select(book) -> push RecommendationsView"]
+        end
+        subgraph LaneRec["Recommendations"]
+        RecVM["RecommendationsViewModel<br/>loading | loaded | failed<br/><i>ViewModels/RecommendationsViewModel.swift</i>"]
+        Merge("fetchNextPage(): author + subject merge<br/>async let both requests in parallel<br/>drop source book (isSameWork)<br/>removingDuplicates(), paged by 20")
+        end
+        subgraph LaneList["Reading list"]
+        RLVM["ReadingListViewModel<br/><i>ViewModels/ReadingListViewModel.swift</i>"]
+        end
+        %% Shared state used by both RecommendationsViewModel and ReadingListViewModel, so outside both lanes
+        RL["ReadingList.shared<br/>books, add(_:), contains(_:)<br/><i>Models/ReadingList.swift</i>"]
+    end
+
+    subgraph Domain["Domain / Services - Services/, Models/"]
+        Proto["«protocol» BookSearchService<br/>books(matchingTitle:)<br/>books(byAuthor:offset:)<br/>books(inSubject:offset:)<br/><i>Services/BookSearchService.swift</i>"]
+        OLS["OpenLibraryService.shared<br/><i>Services/OpenLibraryService.swift</i><br/>decodes SearchResponse / BookDTO<br/>into Book (<i>Models/</i>)"]
+        HTTP["«protocol» HTTPClient<br/>URLSession conformance"]
+    end
+
+    subgraph Data["Data / Persistence - Persistence/"]
+        StoreP["«protocol» ReadingListStore<br/>ReadingListStores.shared"]
+        FileStore["FileReadingListStore (private actor)<br/><i>Persistence/FileReadingListStore.swift</i>"]
+        JSONFile[("ReadingList.json<br/>Application Support, atomic write")]
+    end
+
+    subgraph External["External - Open Library"]
+        SearchAPI["Search API<br/>GET openlibrary.org/search.json<br/>?title= | ?author= | ?subject="]
+        CoversAPI["Covers API<br/>covers.openlibrary.org/b/id/{id}-M.jpg"]
+    end
+
+    %% Edge order steers the layout. Dagre reads each node's outgoing edges in the order written
+    %% here, and SaveToListButton (a leaf) keeps the slot that order gives it. Keep Root's Reading
+    %% List edges before "Discover tab", SearchView's "selectedBook" before its SearchViewModel
+    %% edge, and RecommendationsView's view-model edges before its SaveToListButton edge, or the
+    %% button moves to the left of RecommendationsView and its arrow crosses other lines.
+
+    %% 0-3 Reading List tab and launch load
+    Root -->|"Reading List tab"| RLView
+    Root -->|".task: load() at launch"| RL
+    RLView ----> RLVM
+    RLVM <-.->|"books"| RL
+
+    %% 4-13 Discover tab, recommendations (author + subject merge) and save
+    Root -->|"Discover tab"| SearchV
+    SearchV -->|"selectedBook"| RecV
+    RecV --->|"load() / loadMoreIfNeeded"| RecVM
+    RecV <-.->|"state .loaded([Book])"| RecVM
+    RecV <-->|"each row: isSaved in,<br/>onSave() action out"| SaveBtn
+    RecVM -->|"isSaved(book) / save(book):<br/>contains / add(book)"| RL
+    RecVM --> Merge
+    Merge <-.->|"BookPage x 2"| Proto
+    Merge --->|"books(inSubject:<br/>primarySubject)"| Proto
+    Merge --->|"books(byAuthor:<br/>primaryAuthor)"| Proto
+
+    %% 14-20 Search and the 0 / 1 / many branch
+    SearchV ---->|"title query: submit()"| SearchVM
+    SearchVM <-.->|"[Book] candidates<br/>(max 10, de-duplicated)"| Proto
+    SearchVM --> Branch
+    SearchVM ---->|"books(matchingTitle:)"| Proto
+    Branch -->|"0"| Zero
+    Branch -->|"1"| One
+    Branch -->|"many"| Many
+
+    %% 21-25 Reading list persistence
+    RL <-.->|"[Book] on load"| StoreP
+    RL --->|"load() / insert(book)"| StoreP
+    StoreP -->|"implemented by"| FileStore
+    FileStore -->|"encode [Book]"| JSONFile
+    FileStore <-.->|"decode [Book]"| JSONFile
+
+    %% 26-30 Networking, cover art
+    Proto -->|"implemented by"| OLS
+    OLS -->|"URLRequest"| HTTP
+    HTTP --->|"REST GET"| SearchAPI
+    HTTP <-..->|"JSON docs"| SearchAPI
+    Row -->|"AsyncImage(coverURL)"| CoversAPI
+
+    %% Hide the callee-side head on every return arrow
+    linkStyle 3,7,11,15,21,25,29 marker-end:none
+
+    classDef presentation fill:#dbeafe,stroke:#1d4ed8,color:#0f172a
+    classDef viewmodel fill:#dcfce7,stroke:#15803d,color:#0f172a
+    classDef outcome fill:#f0fdf4,stroke:#15803d,color:#0f172a,stroke-dasharray:4 3
+    classDef domain fill:#fef3c7,stroke:#b45309,color:#0f172a
+    classDef data fill:#fce7f3,stroke:#be185d,color:#0f172a
+    classDef external fill:#e5e7eb,stroke:#374151,color:#0f172a
+    classDef decision fill:#fff7ed,stroke:#c2410c,color:#0f172a,stroke-width:2px
+
+    class Root,SearchV,RecV,RLView,SaveBtn,Row presentation
+    class SearchVM,RecVM,RLVM,RL,Merge viewmodel
+    class Zero,One,Many outcome
+    class Proto,OLS,HTTP domain
+    class StoreP,FileStore,JSONFile data
+    class SearchAPI,CoversAPI external
+    class Branch decision
+
+    style Presentation fill:#eff6ff,stroke:#1d4ed8
+    style VM fill:#f0fdf4,stroke:#15803d
+    style LaneSearch fill:none,stroke:#86efac,stroke-dasharray:4 3
+    style LaneRec fill:none,stroke:#86efac,stroke-dasharray:4 3
+    style LaneList fill:none,stroke:#86efac,stroke-dasharray:4 3
+    style Domain fill:#fffbeb,stroke:#b45309
+    style Data fill:#fdf2f8,stroke:#be185d
+    style External fill:#f3f4f6,stroke:#374151
