@@ -40,10 +40,9 @@ BookRecTests/          Unit tests with stubbed network / temporary-file storage
 
 ## Architecture diagrams
 
-- [`Architecture/architecture.pdf`](Architecture/architecture.pdf) – layered view: Presentation → View Models / State → Domain / Services → Data / Persistence → External (Open Library). It shows the search 0 / 1 / many branch, the author + subject recommendation merge, and how saving flows from `SaveToListButton` through `RecommendationsViewModel` to `ReadingList` and the JSON file.
-- [`Architecture/architecture-sequence.pdf`](Architecture/architecture-sequence.pdf) – sequence diagram of the full journey: search, disambiguate, load recommendations (parallel author and subject requests, pagination), save a book, view the Reading List.
+![Architecture diagram](Architecture/architecture.png)
 
-Both are generated from Mermaid sources in the same folder ([`architecture.mmd`](Architecture/architecture.mmd), [`architecture-sequence.mmd`](Architecture/architecture-sequence.mmd)). To regenerate a PDF after editing its source, run `npx -p @mermaid-js/mermaid-cli mmdc -i Architecture/architecture.mmd -o Architecture/architecture.pdf --pdfFit`.
+![Architecture sequence diagram](Architecture/architecture-sequence.png)
 
 ## Design decisions
 
