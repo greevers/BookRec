@@ -93,6 +93,10 @@ final class PreviewReadingListStore: ReadingListStore {
             books.append(book)
         }
     }
+
+    func delete(id: Book.ID) async throws {
+        books.removeAll { $0.id == id }
+    }
 }
 
 extension ReadingList {

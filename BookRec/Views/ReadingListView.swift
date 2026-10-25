@@ -29,6 +29,11 @@ struct ReadingListView: View {
                         ForEach(viewModel.books) { book in
                             BookRowView(book: book)
                         }
+                        .onDelete { offsets in
+                            Task {
+                                await viewModel.remove(at: offsets)
+                            }
+                        }
                     }
                 }
             }

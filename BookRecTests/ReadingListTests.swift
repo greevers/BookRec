@@ -35,6 +35,18 @@ final class ReadingListModelTests: XCTestCase {
         XCTAssertTrue(sut.contains(book))
     }
 
+    func testRemovingABookDeletesItFromStore() async throws {
+        let store = InMemoryReadingListStore(books: [.fixture(id: "A"), .fixture(id: "B"), .fixture(id: "C")])
+        let sut = ReadingList(store: store)
+        await sut.load()
+
+        await sut.remove(at: IndexSet([0, 2]))
+
+        XCTAssertEqual(sut.books.map(\.id), ["B"])
+        let loaded = try await store.load()
+        XCTAssertEqual(loaded.map(\.id), ["B"])
+    }
+
     func testFailedSaveDoesNotChangeListAndReportsError() async {
         let sut = ReadingList(store: FailingStore())
 

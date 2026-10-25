@@ -18,4 +18,8 @@ final class ReadingListViewModel {
     }
     
     var books: [Book] { readingList.books }
+    
+    func remove(at offsets: IndexSet) async {
+        await readingList.remove(at: offsets)
+    }
 }

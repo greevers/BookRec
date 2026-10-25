@@ -58,4 +58,17 @@ final class ReadingList {
             errorMessage = "Your reading list couldn't be saved. Please try again."
         }
     }
+    
+    /// Remove books from persistent store, called from ReadingListViewModel
+    func remove(at offsets: IndexSet) async {
+        let ids = offsets.map { books[$0].id }
+        for id in ids {
+            do {
+                try await store.delete(id: id)
+                books.removeAll { $0.id == id }
+            } catch {
+                errorMessage = "That book couldn't be removed. Please try again."
+            }
+        }
+    }
 }

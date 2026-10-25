@@ -17,6 +17,8 @@ protocol ReadingListStore {
     func load() async throws -> [Book]
     /// Inserts a book at the end of the list, or updates it in place if already stored
     func insert(_ book: Book) async throws
+    /// Removes the book with the given id. Removing a book that isn't stored does nothing
+    func delete(id: Book.ID) async throws
 }
 
 /// Entry point for persistent stores. Callers only ever see `ReadingListStore`
@@ -52,6 +54,13 @@ private actor FileReadingListStore: ReadingListStore {
         } else {
             books.append(book)
         }
+        try save(books)
+    }
+    
+    // Removes a book from persistent store
+    func delete(id: Book.ID) throws {
+        var books = try load()
+        books.removeAll { $0.id == id }
         try save(books)
     }
     

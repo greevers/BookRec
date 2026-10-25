@@ -86,6 +86,7 @@ final class MockHTTPClient: HTTPClient {
 struct FailingStore: ReadingListStore {
     func load() async throws -> [Book] { [] }
     func insert(_ book: Book) async throws { throw StubError() }
+    func delete(id: Book.ID) async throws { throw StubError() }
 }
 
 /// In-memory `ReadingListStore` double for view-model-level tests.
@@ -106,5 +107,9 @@ final class InMemoryReadingListStore: ReadingListStore {
         } else {
             books.append(book)
         }
+    }
+
+    func delete(id: Book.ID) async throws {
+        books.removeAll { $0.id == id }
     }
 }
